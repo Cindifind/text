@@ -27,7 +27,7 @@ public class ClientAnnotationService implements SmartLifecycle {
     private final String applicationName;
     private final Integer serverPort;
     private boolean isRunning = false;
-    public static JSONArray body = new JSONArray();
+    public JSONArray body = new JSONArray();
 
     // 添加构造函数
     public ClientAnnotationService(ApplicationContext applicationContext, ServerClineConfig serverClineConfig, String applicationName, Integer serverPort) {
