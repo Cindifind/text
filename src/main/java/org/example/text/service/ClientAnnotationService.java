@@ -119,7 +119,7 @@ public class ClientAnnotationService implements SmartLifecycle {
                 body.getJSONObject(i).put("memory", SystemMonitor.getMemory());
             }
             try {
-                HttpResponse<String> response = Unirest.post("http://"+url)
+                HttpResponse<String> response = Unirest.post("https://"+url)
                         .header("Content-Type", "application/json")
                         .body(body.toString())
                         .asString();
