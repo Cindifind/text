@@ -6,6 +6,7 @@ import org.example.text.client.Client;
 import org.example.text.client.RegisterClient;
 import org.example.text.client.State;
 import org.example.text.config.ServerClineConfig;
+import org.example.text.util.IpUtil;
 import org.example.text.util.StageTimer;
 import org.example.text.util.SystemMonitor;
 import org.json.JSONArray;
@@ -28,6 +29,8 @@ public class ClientAnnotationService implements SmartLifecycle {
     private final Integer serverPort;
     private boolean isRunning = false;
     public JSONArray body = new JSONArray();
+    // 未配置 server.cline.pubIp 时自动解析的稳定 IPv6 地址（惰性缓存）
+    private String autoResolvedPubIp;
 
     // 添加构造函数
     public ClientAnnotationService(ApplicationContext applicationContext, ServerClineConfig serverClineConfig, String applicationName, Integer serverPort) {
@@ -100,9 +103,32 @@ public class ClientAnnotationService implements SmartLifecycle {
     private void sendRequest(Client client) {
         State state = new State();
         state.setProName(applicationName);
-        state.setAddress(serverClineConfig.getPubIp() + ":" + serverPort + client.address());
+        state.setAddress(resolvePubIp() + ":" + serverPort + client.address());
         state.setInfName(client.name());
         body.put(new JSONObject(state));
+    }
+
+    /**
+     * 获取上报 IP：优先取 server.cline.pubIp，未配置时自动选寿命最长的稳定 IPv6 地址
+     */
+    private String resolvePubIp() {
+        String pubIp = serverClineConfig.getPubIp();
+        if (pubIp != null && !pubIp.trim().isEmpty()) {
+            return pubIp;
+        }
+        if (autoResolvedPubIp == null) {
+            try {
+                IpUtil.IPv6Info best = IpUtil.getLongestLivedStable(IpUtil.listAll());
+                autoResolvedPubIp = best == null ? "" : best.getAddress();
+                if (autoResolvedPubIp.isEmpty()) {
+                    log.warn("未找到可用的稳定 IPv6 地址");
+                }
+            } catch (Exception e) {
+                autoResolvedPubIp = "";
+                log.warn("自动获取稳定 IPv6 地址失败", e);
+            }
+        }
+        return autoResolvedPubIp;
     }
 
 
